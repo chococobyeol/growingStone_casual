@@ -1,0 +1,22 @@
+.DS_Store
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Java / Gradle
+.gradle/
+build/
+out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.idea/
+.vscode/
