@@ -1,31 +1,40 @@
-## AI Harness Template
+# 돌 키우기
 
-이 저장소는 **하네스 엔지니어링(LLM + 하네스)** 을 프로젝트에 적용하기 위한 **범용 템플릿 레포**입니다.
+다른 작업을 하는 동안 화면 한쪽에 작게 띄워두는 데스크톱 위젯형 PC 방치 게임입니다.
 
-### 하네스 구조
+## 개요
 
-`.claude/` 아래에 다음이 들어있습니다.
+`돌 키우기`는 켜두기만 하면 돌이 천천히 커지고, 1시간마다 새 돌 또는 꾸미기 아이템이 도감에 등록되는 캐주얼 2D 게임입니다. 플레이어가 키우는 메인 돌은 새 돌을 발견해도 교체되지 않고 계속 성장합니다.
 
-- **`agents/`**: 팀(역할) 정의 (누가)
-- **`skills/`**: 반복 워크플로/오케스트레이션 (어떻게)
+## 핵심 방향
 
-추가로 `contracts/`는 **경계 계약(API/Data)** 을 고정하는 디렉터리입니다.
+- Windows/macOS 지원
+- Godot 4.x 기반
+- 캐주얼 2D 일러스트 스타일
+- 로컬 세이브 only
+- 게임 내 재화/상점/반복 과금 없음
+- GitHub 오픈소스 공개
+- Steam/Epic Games Store 유료 빌드 판매 예정
+- 출시 가격 기준: USD 2.00
 
-### 빠른 시작(새 프로젝트에 적용)
+## 주요 기능 초안
 
-1) 이 레포를 GitHub에서 **Template repository**로 지정합니다.  
-2) 새 프로젝트를 만들 때 **Use this template**로 레포를 생성합니다.  
-3) `project-prd.md`를 채웁니다.  
-4) `.claude/skills/project-orchestrator/SKILL.md` 순서대로 실행합니다.
+- 작은 위젯 창
+- 항상 위 표시 옵션
+- 켜둔 시간 기반 로그형 무한 성장
+- 1시간마다 비중복 도감 항목 발견
+- 돌 도감 + 꾸미기 도감
+- 배경/장식장/받침/액세서리 레이어 꾸미기
+- 로컬 스크린샷 저장
 
-### 포함된 템플릿 파일
-- `project-prd.md`: PRD 템플릿
-- `ARCHITECTURE.md`: 아키텍처/결정 로그
-- `contracts/api.md`: API 계약(요청/응답/에러 규약)
-- `contracts/data.md`: 데이터 계약(엔티티/규칙)
-- `TEST_PLAN.md`, `QA_REPORT.md`: 품질 게이트 산출물 템플릿
+## 현재 상태
 
-### 레퍼런스
-이 템플릿은 딩코딩코의 하네스 레포 구조를 참고했습니다.  
-- `https://github.com/dingcodingco/youtube-minsim-with-harness`
+현재는 PRD 초안 작성 단계입니다. 구현 전 제품 방향과 출시 범위를 정리하고 있습니다.
 
+- [PRD 초안](./project-prd.md)
+- [아키텍처 메모](./ARCHITECTURE.md)
+- [테스트 계획](./TEST_PLAN.md)
+
+## 라이선스
+
+라이선스는 [LICENSE](./LICENSE)를 확인하세요.
