@@ -15,6 +15,10 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5")
 config/icon="res://icon.svg"
 
+[debug]
+
+gdscript/warnings/treat_warnings_as_errors=false
+
 [display]
 
 window/size/viewport_width=320
@@ -24,10 +28,6 @@ window/size/window_height_override=420
 window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-
-[debug]
-
-gdscript/warnings/treat_warnings_as_errors=false
 
 [rendering]
 

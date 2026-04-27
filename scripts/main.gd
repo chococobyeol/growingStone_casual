@@ -6,6 +6,8 @@ const DISCOVERY_INTERVAL := 3600.0
 const DEFAULT_WINDOW_SIZE := Vector2i(320, 420)
 const MIN_WINDOW_SIZE := Vector2i(240, 320)
 const MAX_WINDOW_SIZE := Vector2i(480, 640)
+const MANAGEMENT_WINDOW_SIZE := Vector2i(760, 720)
+const MANAGEMENT_MIN_SIZE := Vector2i(640, 560)
 
 var StageView := preload("res://scripts/stage_view.gd")
 
@@ -70,6 +72,7 @@ var state := {
 		"accessory_3": ""
 	},
 	"window_size": [320, 420],
+	"widget_window_size": [320, 420],
 	"always_on_top": true,
 	"last_discovery": ""
 }
@@ -81,6 +84,7 @@ var count_label: Label
 var content: VBoxContainer
 var save_accumulator := 0.0
 var current_tab := "home"
+var management_open := false
 var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -108,6 +112,42 @@ func _notification(what: int) -> void:
 		_save_game()
 
 func _build_ui() -> void:
+	for child in get_children():
+		child.queue_free()
+	if management_open:
+		_build_management_ui()
+	else:
+		_build_widget_ui()
+
+func _build_widget_ui() -> void:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+
+	stage_view = StageView.new()
+	stage_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(stage_view)
+
+	var open_button := Button.new()
+	open_button.text = "관리"
+	open_button.custom_minimum_size = Vector2(56, 30)
+	open_button.anchor_left = 1.0
+	open_button.anchor_right = 1.0
+	open_button.anchor_top = 1.0
+	open_button.anchor_bottom = 1.0
+	open_button.offset_left = -66
+	open_button.offset_top = -40
+	open_button.offset_right = -10
+	open_button.offset_bottom = -10
+	open_button.pressed.connect(_open_management)
+	root.add_child(open_button)
+
+	status_label = null
+	discovery_label = null
+	count_label = null
+	content = null
+
+func _build_management_ui() -> void:
 	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 6)
@@ -117,11 +157,19 @@ func _build_ui() -> void:
 	root.offset_bottom = -8
 	add_child(root)
 
+	var header := HBoxContainer.new()
+	root.add_child(header)
+
 	var title := Label.new()
-	title.text = "돌 키우기"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.text = "돌 키우기 관리"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", 18)
-	root.add_child(title)
+	header.add_child(title)
+
+	var close_button := Button.new()
+	close_button.text = "돌 보기"
+	close_button.pressed.connect(_close_management)
+	header.add_child(close_button)
 
 	stage_view = StageView.new()
 	stage_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -170,20 +218,29 @@ func _add_tab_button(parent: HBoxContainer, label: String, tab_name: String) -> 
 
 func _refresh_all() -> void:
 	var size_multiplier := _size_multiplier()
-	stage_view.set_stage(size_multiplier, state.loadout)
+	if is_instance_valid(stage_view):
+		stage_view.set_stage(size_multiplier, state.loadout)
 	_refresh_status()
-	_refresh_tab()
+	if management_open:
+		_refresh_tab()
 
 func _refresh_status() -> void:
 	var size_multiplier := _size_multiplier()
+	if not is_instance_valid(stage_view):
+		return
+	stage_view.set_stage(size_multiplier, state.loadout)
+	if not management_open:
+		return
+	if not is_instance_valid(status_label):
+		return
 	status_label.text = "%s  %.2fx  실행 %s" % [state.stone_name, size_multiplier, _format_time(state.active_seconds)]
 	var remaining: float = max(0.0, DISCOVERY_INTERVAL - float(state.discovery_elapsed))
 	discovery_label.text = "다음 도감 발견까지 %s" % _format_time(remaining)
 	count_label.text = "도감 %d/%d" % [_discovered_count(), _total_catalog_count()]
-	if is_instance_valid(stage_view):
-		stage_view.set_stage(size_multiplier, state.loadout)
 
 func _refresh_tab() -> void:
+	if not is_instance_valid(content):
+		return
 	for child in content.get_children():
 		child.queue_free()
 	if current_tab == "home":
@@ -360,7 +417,8 @@ func _save_screenshot() -> void:
 	var path := "%s/%s" % [SCREENSHOT_DIR, file_name]
 	image.save_png(path)
 	state.last_discovery = "스크린샷 저장: %s" % ProjectSettings.globalize_path(path)
-	_refresh_tab()
+	if management_open:
+		_refresh_tab()
 
 func _resize_window(delta: int) -> void:
 	var current := DisplayServer.window_get_size()
@@ -369,20 +427,43 @@ func _resize_window(delta: int) -> void:
 		clamp(current.y + int(delta * 1.25), MIN_WINDOW_SIZE.y, MAX_WINDOW_SIZE.y)
 	)
 	state.window_size = [next.x, next.y]
+	state.widget_window_size = [next.x, next.y]
 	_apply_window_settings()
 	_save_game()
 
 func _apply_window_settings() -> void:
-	var window_size := Vector2i(int(state.window_size[0]), int(state.window_size[1]))
-	window_size.x = clamp(window_size.x, MIN_WINDOW_SIZE.x, MAX_WINDOW_SIZE.x)
-	window_size.y = clamp(window_size.y, MIN_WINDOW_SIZE.y, MAX_WINDOW_SIZE.y)
+	var window_size := _current_target_window_size()
 	DisplayServer.window_set_size(window_size)
-	DisplayServer.window_set_min_size(MIN_WINDOW_SIZE)
+	DisplayServer.window_set_min_size(MANAGEMENT_MIN_SIZE if management_open else MIN_WINDOW_SIZE)
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, bool(state.always_on_top))
 
 func _store_window_state() -> void:
+	if management_open:
+		return
 	var current_window_size := DisplayServer.window_get_size()
 	state.window_size = [current_window_size.x, current_window_size.y]
+	state.widget_window_size = [current_window_size.x, current_window_size.y]
+
+func _current_target_window_size() -> Vector2i:
+	if management_open:
+		return MANAGEMENT_WINDOW_SIZE
+	var saved_size := Vector2i(int(state.widget_window_size[0]), int(state.widget_window_size[1]))
+	saved_size.x = clamp(saved_size.x, MIN_WINDOW_SIZE.x, MAX_WINDOW_SIZE.x)
+	saved_size.y = clamp(saved_size.y, MIN_WINDOW_SIZE.y, MAX_WINDOW_SIZE.y)
+	return saved_size
+
+func _open_management() -> void:
+	_store_window_state()
+	management_open = true
+	_apply_window_settings()
+	_build_ui()
+	_refresh_all()
+
+func _close_management() -> void:
+	management_open = false
+	_apply_window_settings()
+	_build_ui()
+	_refresh_all()
 
 func _load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -404,6 +485,8 @@ func _ensure_state_shape() -> void:
 			state.loadout[key] = ""
 	if not state.has("window_size") or state.window_size.size() != 2:
 		state.window_size = [DEFAULT_WINDOW_SIZE.x, DEFAULT_WINDOW_SIZE.y]
+	if not state.has("widget_window_size") or state.widget_window_size.size() != 2:
+		state.widget_window_size = state.window_size.duplicate()
 
 func _save_game() -> void:
 	_store_window_state()

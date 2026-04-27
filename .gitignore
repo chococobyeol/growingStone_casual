@@ -2,6 +2,11 @@
 .env
 .env.*
 
+# Godot
+.godot/
+*.tmp
+*.log
+
 # Node
 node_modules/
 dist/
